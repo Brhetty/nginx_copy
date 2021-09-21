@@ -3,8 +3,11 @@
 #include <ngx_errno.h>
 #include <ngx_times.h>
 #include <ngx_palloc.h>
+#include <ngx_log.h>
+#include <ngx_cycle.h>
 
 typedef struct ngx_pool_s            ngx_pool_t;
+typedef struct ngx_cycle_s           ngx_cycle_t;
 
 #define  NGX_OK          0
 #define  NGX_ERROR      -1

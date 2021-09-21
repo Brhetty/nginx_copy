@@ -61,6 +61,24 @@ main(int argc, char *const *argv)
     if (init_cycle.pool == NULL) {
         return 1;
     }
+
+    if (ngx_save_argv(&init_cycle, argc, argv) != NGX_OK) {
+        return 1;
+    }
+
+    if (ngx_process_options(&init_cycle) != NGX_OK) {
+        return 1;
+    }
+
+    if (ngx_os_init(log) != NGX_OK) {
+        return 1;
+    }
+
+    if (ngx_crc32_table_init() != NGX_OK) {
+        return 1;
+    }
+
+    ngx_slab_sizes_init();
 }
 
 
@@ -270,4 +288,106 @@ ngx_show_version_info(void)
 
         ngx_write_stderr("configure arguments:" NGX_CONFIGURE NGX_LINEFEED);
     }
+}
+
+
+static ngx_int_t
+ngx_process_options(ngx_cycle_t *cycle) 
+{
+    u_char *p;
+    size_t  len;
+
+    if (ngx_prefix) {
+        len = ngx_strlen(ngx_prefix);
+        p = ngx_prefix;
+
+        if (len && !ngx_path_separator(p[len - 1])) {
+            p = ngx_pnalloc(cycle->pool, len + 1);
+            if (p == NULL) {
+                return NGX_ERROR;
+            }
+
+            ngx_memcpy(p, ngx_prefix, len);
+            p[len++] = '/';
+        }
+
+        cycle->conf_prefix.len = len;
+        cycle->conf_prefix.data = p;
+        cycle->prefix.len = len;
+        cycle->prefix.data = p;
+    } else {
+
+#ifndef NGX_PREFIX
+        P = ngx_pnalloc(cycle->pool, NGX_MAX_PATH);
+        if (p == NULL) {
+            return NGX_ERROR;
+        }
+
+        if (ngx_getcwd(p, NGX_MAX_PATH) == 0) {
+            ngx_log_stderr(ngx_errno,  "[emerg]: " ngx_getcwd_n " failed");
+            return NGX_ERROR;
+        }
+
+        len = ngx_strlen(p);
+
+        p[len++] = '/';
+
+        cycle->conf_prefix.len = len;
+        cycle->conf_prefix.data = p;
+        cycle->prefix.len = len;
+        cycle->prefix.data = p;
+
+#else
+
+#ifdef NGX_CONF_PREFIX
+        ngx_str_set(&cycle->conf_prefix, NGX_CONF_PREFIX);
+#else
+        ngx_str_set(&cycle->conf_prefix, NGX_PREFIX);
+#endif
+        ngx_str_set(&cycle->prefix, NGX_PREFIX);      
+
+#endif
+    }
+
+        if (ngx_conf_file) {
+        cycle->conf_file.len = ngx_strlen(ngx_conf_file);
+        cycle->conf_file.data = ngx_conf_file;
+
+    } else {
+        ngx_str_set(&cycle->conf_file, NGX_CONF_PATH);
+    }
+
+    if (ngx_conf_full_name(cycle, &cycle->conf_file, 0) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    for (p = cycle->conf_file.data + cycle->conf_file.len - 1;
+         p > cycle->conf_file.data;
+         p--)
+    {
+        if (ngx_path_separator(*p)) {
+            cycle->conf_prefix.len = p - cycle->conf_file.data + 1;
+            cycle->conf_prefix.data = cycle->conf_file.data;
+            break;
+        }
+    }
+
+    if (ngx_error_log) {
+        cycle->error_log.len = ngx_strlen(ngx_error_log);
+        cycle->error_log.data = ngx_error_log;
+
+    } else {
+        ngx_str_set(&cycle->error_log, NGX_ERROR_LOG_PATH);
+    }
+
+    if (ngx_conf_params) {
+        cycle->conf_param.len = ngx_strlen(ngx_conf_params);
+        cycle->conf_param.data = ngx_conf_params;
+    }
+
+    if (ngx_test_config) {
+        cycle->log->log_level = NGX_LOG_INFO;
+    }
+
+    return NGX_OK;
 }
