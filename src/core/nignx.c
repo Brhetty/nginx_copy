@@ -79,6 +79,12 @@ main(int argc, char *const *argv)
     }
 
     ngx_slab_sizes_init();
+
+    if (ngx_add_inherited_sockets(&init_cycle) != NGX_OK) {
+        return 1;
+    }
+
+    
 }
 
 
@@ -390,4 +396,19 @@ ngx_process_options(ngx_cycle_t *cycle)
     }
 
     return NGX_OK;
+}
+
+static ngx_int_t
+ngx_add_inherited_sockets(ngx_cycle_t *cycle)
+{
+    u_char *p, *v, *inherited;
+    ngx_int_t s;
+    ngx_listening_t *ls;
+
+    inherited = (u_char *) getenv(NGINX_VAR);
+
+    if (inherited == NULL) {
+        return NGX_OK;
+    }
+
 }

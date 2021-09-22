@@ -9,6 +9,8 @@
 typedef struct ngx_pool_s            ngx_pool_t;
 typedef struct ngx_cycle_s           ngx_cycle_t;
 
+typedef void (*ngx_connection_handler_pt)(ngx_connection_t *c);
+
 #define  NGX_OK          0
 #define  NGX_ERROR      -1
 
