@@ -84,7 +84,19 @@ main(int argc, char *const *argv)
         return 1;
     }
 
-    
+    if (ngx_preinit_modules() != NGX_OK) {
+        return 1;
+    }
+
+    cycle = ngx_init_cycle(&init_cycle);
+    if (cycle == NULL) {
+        if (ngx_test_config) {
+            ngx_log_stderr(0, "configuration file %s test failed",
+                           init_cycle.conf_file.data);
+        }
+
+        return 1;
+    }
 }
 
 
@@ -411,4 +423,13 @@ ngx_add_inherited_sockets(ngx_cycle_t *cycle)
         return NGX_OK;
     }
 
+    ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0
+                    "using inherited sockets from\"%s\""， inherited);
+
+    if (ngx_array_init(&cycle->listening, cycle->pool, 10, sizeof(ngx_listening_t)) 
+        != NGX_OK)
+    {
+        return NGX_ERROR;
+    }
+           
 }
