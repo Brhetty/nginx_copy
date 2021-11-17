@@ -20,3 +20,22 @@ ngx_preinit_modules(void)
 
     return NGX_OK；
 }
+
+
+ngx_int_t
+ngx_cycle_modules(ngx_cycle_t *cycle)
+{
+    cycle->modules = ngx_pcalloc(cycle->pool, (ngx_max_module + 1)
+                                                * sizeof(ngx_module_t *));
+    
+    if (cycle->modeules == NULL) {
+        return NGX_ERROR;
+    }
+
+    ngx_memcpy(cycle->modules, ngx_modules, 
+                ngx_modules_n * sizeof(ngx_module_t *));
+
+    cycle->modules_n = ngx_modules_n;
+
+    return NGX_OK;
+}
